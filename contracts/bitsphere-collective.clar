@@ -241,3 +241,39 @@
         )
     )
 )
+
+(define-public (cast-vote (proposal-id uint) (support bool))
+    (begin
+        (try! (ensure-initialized))
+        (try! (validate-proposal-id proposal-id))
+
+        (let (
+            (proposal (unwrap! (map-get? governance-proposals proposal-id) ERR_PROPOSAL_NOT_FOUND))
+            (voting-power (get-member-voting-power tx-sender))
+        )
+            (asserts! (> voting-power u0) ERR_UNAUTHORIZED)
+            (asserts! (< stacks-block-height (get expiry-height proposal)) ERR_PROPOSAL_EXPIRED)
+            (asserts! (is-none (map-get? member-votes {proposal-id: proposal-id, voter: tx-sender})) ERR_ALREADY_VOTED)
+            
+            ;; Record member vote
+            (map-set member-votes {proposal-id: proposal-id, voter: tx-sender} support)
+            
+            ;; Update proposal vote tallies
+            (map-set governance-proposals proposal-id 
+                (merge proposal 
+                    {
+                        votes-for: (if support 
+                            (+ (get votes-for proposal) voting-power)
+                            (get votes-for proposal)),
+                        votes-against: (if support
+                            (get votes-against proposal)
+                            (+ (get votes-against proposal) voting-power))
+                    }
+                )
+            )
+            
+            (print {event: "vote-cast", proposal-id: proposal-id, voter: tx-sender, support: support, power: voting-power})
+            (ok true)
+        )
+    )
+)
