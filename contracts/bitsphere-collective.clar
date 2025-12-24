@@ -206,8 +206,7 @@
     (beneficiary principal)
     (voting-duration uint)
 )
-
-(begin
+    (begin
         (try! (ensure-initialized))
 
         ;; Comprehensive input validation
@@ -320,4 +319,45 @@
         (print {event: "minimum-deposit-updated", new-value: new-minimum})
         (ok true)
     )
+)
+
+(define-public (update-lock-period (new-period uint))
+    (begin
+        (asserts! (is-protocol-owner) ERR_OWNER_ONLY)
+        (asserts! (> new-period u0) ERR_ZERO_AMOUNT)
+        (var-set lock-period new-period)
+        (print {event: "lock-period-updated", new-value: new-period})
+        (ok true)
+    )
+)
+
+;; READ-ONLY QUERY FUNCTIONS
+
+(define-read-only (get-member-balance (member principal))
+    (ok (default-to u0 (map-get? member-balances member)))
+)
+
+(define-read-only (get-total-member-tokens)
+    (ok (var-get total-supply))
+)
+
+(define-read-only (get-proposal-details (proposal-id uint))
+    (ok (map-get? governance-proposals proposal-id))
+)
+
+(define-read-only (get-member-deposit-info (member principal))
+    (ok (map-get? member-deposits member))
+)
+
+(define-read-only (get-member-vote (proposal-id uint) (voter principal))
+    (ok (map-get? member-votes {proposal-id: proposal-id, voter: voter}))
+)
+
+(define-read-only (get-protocol-status)
+    (ok {
+        initialized: (var-get protocol-initialized),
+        total-proposals: (var-get proposal-counter),
+        total-supply: (var-get total-supply),
+        contract-balance: (stx-get-balance current-contract)
+    })
 )
