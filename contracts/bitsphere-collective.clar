@@ -206,3 +206,38 @@
     (beneficiary principal)
     (voting-duration uint)
 )
+
+(begin
+        (try! (ensure-initialized))
+
+        ;; Comprehensive input validation
+        (asserts! (> (len description) u0) ERR_INVALID_DESCRIPTION)
+        (asserts! (> funding-amount u0) ERR_ZERO_AMOUNT)
+        (asserts! (not (is-eq beneficiary current-contract)) ERR_INVALID_TARGET)
+        (asserts! (and (>= voting-duration MINIMUM_PROPOSAL_DURATION) 
+                      (<= voting-duration MAXIMUM_PROPOSAL_DURATION)) ERR_INVALID_DURATION)
+        
+        (let (
+            (proposer-balance (default-to u0 (map-get? member-balances tx-sender)))
+            (new-proposal-id (+ (var-get proposal-counter) u1))
+        )
+            (asserts! (> proposer-balance u0) ERR_UNAUTHORIZED)
+            
+            ;; Create governance proposal
+            (map-set governance-proposals new-proposal-id {
+                proposer: tx-sender,
+                description: description,
+                funding-amount: funding-amount,
+                beneficiary: beneficiary,
+                expiry-height: (+ stacks-block-height voting-duration),
+                executed: false,
+                votes-for: u0,
+                votes-against: u0
+            })
+            
+            (var-set proposal-counter new-proposal-id)
+            (print {event: "proposal-submitted", proposal-id: new-proposal-id, proposer: tx-sender, amount: funding-amount})
+            (ok new-proposal-id)
+        )
+    )
+)
