@@ -10,7 +10,7 @@ plan:
       transactions:
         - contract-publish:
             contract-name: bitsphere-collective
-            expected-sender: SPR54P37AA27XHMMTCDEW4YZFPFJX69162JR5CT4
+            expected-sender: SP3P2G9ZK7B309EGAM9QAM143YGDNBGGQAXDAS1GW
             cost: 139990
             path: contracts/bitsphere-collective.clar
             anchor-block-only: true
